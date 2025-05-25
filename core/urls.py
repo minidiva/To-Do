@@ -1,8 +1,10 @@
 from django.urls import path
-from .views import home
-from .views import say_hello
+from . import views
 
 urlpatterns = [
-    path('home/', home, name='home'),
-    path('hello/', say_hello, name='say_hello'),
+    path('create/', views.render_task_creating, name='task_form'),
+    path('list/', views.render_list, name='task_list'),
+    path('task/create/', views.task_create, name='task_create'),
+    path('task/fetch/', views.task_fetch, name='task_get'),
+    path('task/complete/', views.task_toggle, name='task_toggle')
 ]

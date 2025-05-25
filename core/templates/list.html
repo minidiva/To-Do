@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .task-list {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .completed-marker {
+            color: green;
+            margin-left: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .add-task-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            width: 200px;
+        }
+
+        .add-task-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Task List</h1>
+    <a href="/create/" class="add-task-button">Add New Task</a>
+    <div class="task-list" id="taskContainer">
+        <!-- Tasks will be rendered here -->
+    </div>
+
+    <script>
+        async function fetchTasks() {
+            try {
+                const response = await fetch('/task/fetch/');
+                if (response.ok) {
+                    const data = await response.json();
+                    renderTasks(data.tasks);
+                } else {
+                    console.error('Failed to fetch tasks');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function renderTasks(tasks) {
+            const container = document.getElementById('taskContainer');
+            container.innerHTML = ''; // Clear existing content
+
+            tasks.forEach(task => {
+                const taskElement = `
+                    <figure class="task-item">
+                        <div class="task-header">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                                   onclick="toggleTask(${task.id})"
+                                   id="task-${task.id}">
+                            <figcaption>${task.title}</figcaption>
+                            ${task.completed ? '<span class="completed-marker">✓</span>' : ''}
+                        </div>
+                    </figure>
+                `;
+                container.innerHTML += taskElement;
+            });
+        }
+
+        async function toggleTask(id) {
+            const checkbox = document.getElementById(`task-${id}`);
+            const isCompleted = checkbox.checked;
+
+            try {
+            const response = await fetch('/task/complete/', {
+                method: 'PUT',
+                headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ 
+                id: id,
+                completed: isCompleted 
+                })
+            });
+
+            if (response.ok) {
+                // Refresh the task list
+                fetchTasks();
+            } else {
+                console.error('Failed to update task');
+                // Revert checkbox state if request failed
+                checkbox.checked = !isCompleted;
+            }
+            } catch (error) {
+            console.error('Error:', error);
+            // Revert checkbox state if request failed
+            checkbox.checked = !isCompleted;
+            }
+        }
+
+        function getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return value;
+                }
+            }
+            return '';
+        }
+
+        // Initialize the task list
+        document.addEventListener('DOMContentLoaded', fetchTasks);
+    </script>
+</body>
+</html>
